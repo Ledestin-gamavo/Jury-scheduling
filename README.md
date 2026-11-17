@@ -23,7 +23,7 @@ Le dépôt suit une structure modulaire rigoureuse et normalisée, garantissant 
 
 1. **Clonage et Installation** :
    Le projet nécessite Python 3.10 ou supérieur. Aucune bibliothèque externe complexe n'est exigée pour le socle de validation de base.
-   ```bash
+   
    git clone <url-du-depot>
    cd jury-scheduling-hackathon
    pip install -r requirements.txt
