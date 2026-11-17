@@ -1,513 +1,333 @@
-# État d'Avancement du Projet
+# Current Progress
 
-## Objectif du document
+## Project Status
 
-Ce document sert de référence officielle pour toute l'équipe.
+### Phase 1 - Core Domain
 
-Avant de développer une fonctionnalité, chaque membre doit consulter ce document afin de connaître :
+✅ core/
 
-- l'état réel du projet ;
-- les modules terminés ;
-- les modules en cours ;
-- les contraintes d'architecture ;
-- les dépendances autorisées ;
-- l'ordre officiel des développements.
+- enums.py
+- teacher.py
+- student.py
+- room.py
+- session.py
+- solution.py
+- instance.py
 
----
+Status:
 
-# Jalon global
-
-## ✅ Documentation terminée
-
-Fichiers :
-
-```text
-README.md
-
-docs/
-├── project_overview.md
-├── repository_structure.md
-├── architecture.md
-├── development_guide.md
-└── current_progress.md
-```
+- terminé
+- stable
 
 ---
 
-## ✅ Core terminé
+### Phase 2 - Parsing
 
-```text
-src/core/
+✅ parsers/
 
-✅ enums.py
-✅ teacher.py
-✅ student.py
-✅ room.py
-✅ session.py
-✅ solution.py
-✅ instance.py
-```
+- json_loader.py
+- validation_parser.py
+- parser_utils.py
 
-### Responsabilités
+Status:
 
-Le module `core` contient :
-
-- toutes les entités métier ;
-- les énumérations ;
-- les disponibilités ;
-- les structures de planning ;
-- les index métier ;
-- les contrôles structurels d'instance.
-
-Aucun accès JSON.
-
-Aucune logique de résolution.
-
-Aucune métrique.
+- terminé
+- stable
 
 ---
 
-## ✅ Parsers terminés
+### Phase 3 - Preprocessing
 
-```text
-src/parsers/
+✅ preprocessing/
 
-✅ __init__.py
-✅ schema_checker.py
-✅ instance_loader.py
-✅ solution_loader.py
-```
+- availability_matrix.py
+- jury_candidates.py
+- domain_filters.py
+- preprocessing_context.py
+- preprocessing_builder.py
 
-### Responsabilités
+Status:
 
-Transformation :
-
-```text
-JSON
-  ↓
-Objets métiers
-```
-
-Fonctions principales :
-
-```python
-load_instance(...)
-load_solution(...)
-```
-
-### Garanties
-
-- lecture JSON stricte ;
-- validation de format ;
-- vérification des schémas ;
-- conversion vers les objets du module core.
+- terminé
+- stable
 
 ---
 
-## ✅ Preprocessing terminé
+### Phase 4 - Validation
 
-```text
-src/preprocessing/
+✅ validation/
 
-✅ __init__.py
-✅ availability_matrix.py
-✅ domain_filters.py
-✅ jury_candidates.py
-✅ instance_statistics.py
-```
+- validation_result.py
+- validator.py
+- constraint_checks.py
+- validation_utils.py
 
-### Responsabilités
+Status:
 
-Pré-calcul des structures utilisées par les solveurs.
+- terminé
+- stable
 
 ---
 
-### availability_matrix.py
+### Phase 5 - Metrics
 
-Fournit :
+✅ metrics/
 
-```python
-AvailabilityMatrix
-```
+- teacher_presence_days.py
+- teacher_idle_slots.py
+- teacher_load_range.py
+- supervisor_group_breaks.py
+- distinct_jury_pairs.py
+- evaluate.py
 
-Fonctionnalités :
+Status:
 
-- accès temps constant aux disponibilités ;
-- créneaux autorisés par phase ;
-- créneaux candidats ;
-- intersections de disponibilités ;
-- index temporels utilisables dans CP-SAT.
+- terminé
+- stable
 
----
+Contract metrics implemented:
 
-### domain_filters.py
+✅ teacher_presence_days
 
-Fournit :
+✅ teacher_idle_slots
 
-```python
-DomainFilters
-```
+✅ teacher_load_range
 
-Fonctionnalités :
+✅ supervisor_group_breaks
 
-- enseignants couvrant un domaine ;
-- examinateurs possibles ;
-- présidents possibles ;
-- diagnostics d'instance ;
-- statistiques par domaine.
+✅ distinct_jury_pairs
 
 ---
 
-### jury_candidates.py
+### Phase 6 - Greedy Solver
 
-Fournit :
+✅ solvers/greedy/
 
-```python
-JuryCandidates
-```
+- greedy_config.py
+- candidate_ranking.py
+- session_builder.py
+- repair.py
+- greedy_solver.py
 
-Fonctionnalités :
+Status:
 
-- présidents candidats ;
-- examinateurs candidats ;
-- binômes candidats ;
-- partage des calculs entre étudiants similaires ;
-- support CP-SAT futur.
+- terminé
+- à tester
 
----
+Features:
 
-### instance_statistics.py
+✅ MRV ordering
 
-Fournit :
+✅ Jury ranking
 
-```python
-InstanceStatistics
-```
+✅ Slot ranking
 
-Fonctionnalités :
+✅ Room ranking
 
-- statistiques globales ;
-- densités ;
-- capacités ;
-- diagnostics ;
-- rapports benchmark.
+✅ Repair operator
+
+✅ Validation integration
+
+✅ Metrics-driven construction
 
 ---
 
-## ✅ Validation terminée
+### Phase 7 - Local Search
 
-```text
-src/validation/
+✅ solvers/local_search/
 
-✅ __init__.py
-✅ availability_constraints.py
-✅ no_overlap_constraints.py
-✅ capacity_constraints.py
-✅ continuity_constraints.py
-✅ role_constraints.py
-✅ room_constraints.py
-✅ solution_validator.py
-```
+- local_search_config.py
+- neighborhood.py
+- move_operator.py
+- acceptance.py
+- statistics.py
+- local_search_solver.py
 
-### Responsabilités
+Status:
 
-Validation complète d'une solution.
+- terminé
+- à tester
 
-Aucune optimisation.
+Neighborhoods:
 
-Aucune métrique.
+✅ Change Slot
 
----
+✅ Change Room
 
-### Contrôles implémentés
+✅ Change Jury
 
-#### Disponibilités
+✅ Swap Sessions
 
-```text
-availability_constraints.py
-```
+✅ Move Supervisor Block
 
-Vérifie :
+Strategies:
 
-- disponibilité étudiants ;
-- disponibilité enseignants ;
-- disponibilité salles.
+✅ First Improvement
 
----
+✅ Best Improvement
 
-#### Non-chevauchements
+Metrics integration:
 
-```text
-no_overlap_constraints.py
-```
+✅ SolutionEvaluator
 
-Vérifie :
+Validation:
 
-- conflits enseignants ;
-- conflits étudiants ;
-- conflits salles.
+✅ SolutionValidator
+
+Statistics:
+
+✅ SearchStatistics
 
 ---
 
-#### Capacités
+# Architecture Rules
 
-```text
-capacity_constraints.py
-```
+Dependencies:
 
-Vérifie :
+core
+    ↑
+parsers
 
-- max_sessions_per_day enseignants ;
-- max_sessions_per_day salles.
+core
+    ↑
+preprocessing
 
----
+core
+    ↑
+validation
 
-#### Continuité
+core
+    ↑
+metrics
 
-```text
-continuity_constraints.py
-```
+core
+preprocessing
+validation
+metrics
+    ↑
+solvers
 
-Vérifie :
-
-- même président ;
-- même examinateur ;
-- cohérence pré-soutenance → finale.
-
----
-
-#### Rôles
-
-```text
-role_constraints.py
-```
-
-Vérifie :
-
-- rôle président ;
-- rôle examinateur ;
-- couverture des domaines ;
-- distinction des membres du jury.
-
----
-
-#### Salles
-
-```text
-room_constraints.py
-```
-
-Vérifie :
-
-- salle obligatoire en finale ;
-- salle interdite en pré-soutenance ;
-- existence de la salle.
-
----
-
-#### Validateur principal
-
-```python
-SolutionValidator
-ValidationResult
-```
-
-Fonction principale :
-
-```python
-validator.validate(instance, solution)
-```
-
-Retour :
-
-```python
-ValidationResult
-```
-
-avec :
-
-```python
-valid
-errors
-warnings
-```
-
----
-
-## Architecture disponible aujourd'hui
-
-Le pipeline complet actuellement fonctionnel est :
-
-```text
-JSON
-  ↓
-Parsers
-  ↓
-Core
-  ↓
-Preprocessing
-  ↓
-Validation
-```
-
----
-
-# Modules restant à développer
-
-## ⏳ Metrics
-
-Prochaine étape.
-
-```text
-src/metrics/
-
-teacher_presence_days.py
-teacher_idle_slots.py
-teacher_load_range.py
-supervisor_group_breaks.py
-distinct_jury_pairs.py
-evaluate.py
-```
-
-Responsabilité :
-
-Calcul du score d'une solution.
-
----
-
-## ⬜ Solvers
-
-```text
-src/solvers/
-
-greedy/
-cpsat/
-local_search/
-hybrid/
-```
-
-Responsabilité :
-
-Génération des solutions.
-
----
-
-## ⬜ Exporters
-
-```text
-src/exporters/
-```
-
-Responsabilité :
-
-Export JSON et CSV.
-
----
-
-## ⬜ Benchmarking
-
-```text
-src/benchmarking/
-```
-
-Responsabilité :
-
-Mesure et comparaison des solveurs.
-
----
-
-## ⬜ Visualization
-
-```text
-src/visualization/
-```
-
-Responsabilité :
-
-Rapports visuels et tableaux de bord.
-
----
-
-# Règles d'architecture
-
-## Interdiction
-
-```text
-core -> parsers
-core -> preprocessing
-core -> validation
-core -> metrics
-core -> solvers
-```
-
----
-
-## Autorisé
-
-```text
-parsers -> core
-
-preprocessing -> core
-
-validation -> core
-
-metrics -> core
+Allowed:
 
 solvers -> core
+
 solvers -> preprocessing
+
 solvers -> validation
+
 solvers -> metrics
 
-benchmarking -> parsers
-benchmarking -> solvers
-benchmarking -> validation
-benchmarking -> metrics
-```
+local_search -> greedy
+
+Forbidden:
+
+core -> preprocessing
+
+core -> validation
+
+core -> metrics
+
+core -> solvers
+
+metrics -> validation
+
+preprocessing -> solvers
+
+validation -> solvers
 
 ---
 
-# État réel du projet
+# Remaining Work
 
-```text
-✅ Documentation
+## Phase 8
 
-✅ Core
+⬜ documentation finalisation
 
-✅ Parsers
+- architecture.md
+- module_reference.md
+- solver_workflow.md
+- metrics_reference.md
+- contribution_guide.md
 
-✅ Preprocessing
+---
 
-✅ Validation
+## Phase 9
 
-⏳ Metrics
+⬜ CP-SAT Solver
 
-⬜ Greedy Solver
+Planned:
 
-⬜ CPSAT Solver
+solvers/cpsat/
 
-⬜ Local Search
+- cpsat_config.py
+- model_builder.py
+- variable_factory.py
+- constraints.py
+- objective.py
+- warm_start.py
+- cpsat_solver.py
+
+---
+
+## Phase 10
 
 ⬜ Hybrid Solver
 
-⬜ Exporters
+Pipeline:
 
-⬜ Benchmarking
-
-⬜ Visualization
-```
+Greedy
+    →
+Local Search
+    →
+CP-SAT
+    →
+Hybrid Result
 
 ---
 
-# Prochaine étape officielle
+## Phase 11
 
-```text
-src/metrics/
-```
+⬜ Benchmarking
 
-Objectif :
+benchmark/
 
-Transformer une solution valide en score d'optimisation afin de comparer :
+- benchmark_runner.py
+- benchmark_report.py
+- experiment_config.py
 
-- GreedySolver ;
-- CPSATSolver ;
-- HybridSolver.
+---
+
+## Phase 12
+
+⬜ Visualization
+
+visualization/
+
+- gantt.py
+- metrics_dashboard.py
+- export_tools.py
+
+---
+
+# Important Notes
+
+Current implementation has not yet been fully validated on:
+
+- demo_instance.json
+- small_01.json
+- medium instances
+- large instances
+
+Required before CP-SAT:
+
+✅ unit testing
+
+✅ integration testing
+
+✅ validator.py verification
+
+✅ metrics verification
+
+✅ greedy verification
+
+✅ local search verification
