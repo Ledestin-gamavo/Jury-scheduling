@@ -2,48 +2,39 @@
 
 ## Objectif du document
 
-Ce document sert de point de synchronisation pour toute l'équipe.
+Ce document sert de référence officielle pour toute l'équipe.
 
-Avant de commencer un développement, chaque membre doit consulter ce fichier afin de savoir :
+Avant de développer une fonctionnalité, chaque membre doit consulter ce document afin de connaître :
 
-- ce qui est déjà implémenté ;
-- ce qui est en cours ;
-- ce qui reste à développer ;
-- les conventions techniques à respecter ;
-- les dépendances entre modules.
+- l'état réel du projet ;
+- les modules terminés ;
+- les modules en cours ;
+- les contraintes d'architecture ;
+- les dépendances autorisées ;
+- l'ordre officiel des développements.
 
 ---
 
-# Architecture officielle du projet
+# Jalon global
 
-Tous les développements doivent respecter STRICTEMENT l'arborescence officielle du dépôt.
+## ✅ Documentation terminée
 
-Aucun nouveau dossier ne doit être créé sans validation collective.
-
-Le code est organisé autour des modules suivants :
+Fichiers :
 
 ```text
-core
-parsers
-preprocessing
-validation
-metrics
-solvers
-benchmarking
-exporters
-visualization
-utils
+README.md
+
+docs/
+├── project_overview.md
+├── repository_structure.md
+├── architecture.md
+├── development_guide.md
+└── current_progress.md
 ```
 
 ---
 
-# État actuel du développement
-
-## ✅ Terminé
-
-### Module : core
-
-Les fichiers suivants sont implémentés :
+## ✅ Core terminé
 
 ```text
 src/core/
@@ -57,267 +48,466 @@ src/core/
 ✅ instance.py
 ```
 
----
+### Responsabilités
 
-## Fonctionnalités déjà disponibles
+Le module `core` contient :
 
-### enums.py
+- toutes les entités métier ;
+- les énumérations ;
+- les disponibilités ;
+- les structures de planning ;
+- les index métier ;
+- les contrôles structurels d'instance.
 
-Contient :
+Aucun accès JSON.
 
-- SCHEMA_VERSION
-- Phase
-- Role
-- InstanceSize
-- Availability
-- check_identifier()
+Aucune logique de résolution.
 
-Rôle :
-
-Fournir les types fondamentaux du domaine.
+Aucune métrique.
 
 ---
 
-### teacher.py
-
-Contient :
-
-Classe :
-
-```python
-Teacher
-```
-
-Fonctionnalités :
-
-- domaines de compétence
-- rôles éligibles
-- disponibilités
-- plafond journalier
-- vérifications d'éligibilité
-
----
-
-### student.py
-
-Contient :
-
-Classe :
-
-```python
-Student
-```
-
-Fonctionnalités :
-
-- domaine scientifique
-- encadrant
-- admissibilité finale
-- disponibilités
-
----
-
-### room.py
-
-Contient :
-
-Classe :
-
-```python
-Room
-```
-
-Fonctionnalités :
-
-- disponibilités
-- plafond journalier
-- gestion des finales
-
----
-
-### session.py
-
-Contient :
-
-Classe :
-
-```python
-Session
-```
-
-Fonctionnalités :
-
-- représentation d'une séance
-- gestion du jury
-- gestion de la salle
-- déplacement d'une séance
-
----
-
-### solution.py
-
-Contient :
-
-Classe :
-
-```python
-Solution
-```
-
-Fonctionnalités :
-
-- stockage des séances
-- indexation
-- filtrage
-- duplication
-
-Aucune validation métier.
-
----
-
-### instance.py
-
-Contient :
-
-Classe :
-
-```python
-Instance
-```
-
-Fonctionnalités :
-
-- stockage complet des données
-- index internes
-- accès rapides
-- calculs utilitaires
-- vérification structurelle
-
-Cette classe sera la base :
-
-- du solveur glouton ;
-- du modèle CP-SAT ;
-- du validateur ;
-- des métriques.
-
----
-
-# Règles importantes
-
-## Règle 1
-
-Ne jamais modifier :
+## ✅ Parsers terminés
 
 ```text
-references/
+src/parsers/
+
+✅ __init__.py
+✅ schema_checker.py
+✅ instance_loader.py
+✅ solution_loader.py
 ```
 
-Contient :
+### Responsabilités
 
-- schema_contract.md
-- solution.schema.json
-- instance.schema.json
-- validator.py
-
-Ces fichiers sont la référence officielle.
-
----
-
-## Règle 2
-
-Ne jamais faire de lecture JSON dans core.
-
-Le module core ne dépend :
-
-- ni des parseurs ;
-- ni des solveurs ;
-- ni du validateur.
-
----
-
-## Règle 3
-
-Le module core doit rester indépendant.
-
-Dépendance autorisée :
+Transformation :
 
 ```text
-core
+JSON
+  ↓
+Objets métiers
 ```
 
-Dépendances interdites :
+Fonctions principales :
+
+```python
+load_instance(...)
+load_solution(...)
+```
+
+### Garanties
+
+- lecture JSON stricte ;
+- validation de format ;
+- vérification des schémas ;
+- conversion vers les objets du module core.
+
+---
+
+## ✅ Preprocessing terminé
+
+```text
+src/preprocessing/
+
+✅ __init__.py
+✅ availability_matrix.py
+✅ domain_filters.py
+✅ jury_candidates.py
+✅ instance_statistics.py
+```
+
+### Responsabilités
+
+Pré-calcul des structures utilisées par les solveurs.
+
+---
+
+### availability_matrix.py
+
+Fournit :
+
+```python
+AvailabilityMatrix
+```
+
+Fonctionnalités :
+
+- accès temps constant aux disponibilités ;
+- créneaux autorisés par phase ;
+- créneaux candidats ;
+- intersections de disponibilités ;
+- index temporels utilisables dans CP-SAT.
+
+---
+
+### domain_filters.py
+
+Fournit :
+
+```python
+DomainFilters
+```
+
+Fonctionnalités :
+
+- enseignants couvrant un domaine ;
+- examinateurs possibles ;
+- présidents possibles ;
+- diagnostics d'instance ;
+- statistiques par domaine.
+
+---
+
+### jury_candidates.py
+
+Fournit :
+
+```python
+JuryCandidates
+```
+
+Fonctionnalités :
+
+- présidents candidats ;
+- examinateurs candidats ;
+- binômes candidats ;
+- partage des calculs entre étudiants similaires ;
+- support CP-SAT futur.
+
+---
+
+### instance_statistics.py
+
+Fournit :
+
+```python
+InstanceStatistics
+```
+
+Fonctionnalités :
+
+- statistiques globales ;
+- densités ;
+- capacités ;
+- diagnostics ;
+- rapports benchmark.
+
+---
+
+## ✅ Validation terminée
+
+```text
+src/validation/
+
+✅ __init__.py
+✅ availability_constraints.py
+✅ no_overlap_constraints.py
+✅ capacity_constraints.py
+✅ continuity_constraints.py
+✅ role_constraints.py
+✅ room_constraints.py
+✅ solution_validator.py
+```
+
+### Responsabilités
+
+Validation complète d'une solution.
+
+Aucune optimisation.
+
+Aucune métrique.
+
+---
+
+### Contrôles implémentés
+
+#### Disponibilités
+
+```text
+availability_constraints.py
+```
+
+Vérifie :
+
+- disponibilité étudiants ;
+- disponibilité enseignants ;
+- disponibilité salles.
+
+---
+
+#### Non-chevauchements
+
+```text
+no_overlap_constraints.py
+```
+
+Vérifie :
+
+- conflits enseignants ;
+- conflits étudiants ;
+- conflits salles.
+
+---
+
+#### Capacités
+
+```text
+capacity_constraints.py
+```
+
+Vérifie :
+
+- max_sessions_per_day enseignants ;
+- max_sessions_per_day salles.
+
+---
+
+#### Continuité
+
+```text
+continuity_constraints.py
+```
+
+Vérifie :
+
+- même président ;
+- même examinateur ;
+- cohérence pré-soutenance → finale.
+
+---
+
+#### Rôles
+
+```text
+role_constraints.py
+```
+
+Vérifie :
+
+- rôle président ;
+- rôle examinateur ;
+- couverture des domaines ;
+- distinction des membres du jury.
+
+---
+
+#### Salles
+
+```text
+room_constraints.py
+```
+
+Vérifie :
+
+- salle obligatoire en finale ;
+- salle interdite en pré-soutenance ;
+- existence de la salle.
+
+---
+
+#### Validateur principal
+
+```python
+SolutionValidator
+ValidationResult
+```
+
+Fonction principale :
+
+```python
+validator.validate(instance, solution)
+```
+
+Retour :
+
+```python
+ValidationResult
+```
+
+avec :
+
+```python
+valid
+errors
+warnings
+```
+
+---
+
+## Architecture disponible aujourd'hui
+
+Le pipeline complet actuellement fonctionnel est :
+
+```text
+JSON
+  ↓
+Parsers
+  ↓
+Core
+  ↓
+Preprocessing
+  ↓
+Validation
+```
+
+---
+
+# Modules restant à développer
+
+## ⏳ Metrics
+
+Prochaine étape.
+
+```text
+src/metrics/
+
+teacher_presence_days.py
+teacher_idle_slots.py
+teacher_load_range.py
+supervisor_group_breaks.py
+distinct_jury_pairs.py
+evaluate.py
+```
+
+Responsabilité :
+
+Calcul du score d'une solution.
+
+---
+
+## ⬜ Solvers
+
+```text
+src/solvers/
+
+greedy/
+cpsat/
+local_search/
+hybrid/
+```
+
+Responsabilité :
+
+Génération des solutions.
+
+---
+
+## ⬜ Exporters
+
+```text
+src/exporters/
+```
+
+Responsabilité :
+
+Export JSON et CSV.
+
+---
+
+## ⬜ Benchmarking
+
+```text
+src/benchmarking/
+```
+
+Responsabilité :
+
+Mesure et comparaison des solveurs.
+
+---
+
+## ⬜ Visualization
+
+```text
+src/visualization/
+```
+
+Responsabilité :
+
+Rapports visuels et tableaux de bord.
+
+---
+
+# Règles d'architecture
+
+## Interdiction
 
 ```text
 core -> parsers
-core -> metrics
+core -> preprocessing
 core -> validation
+core -> metrics
 core -> solvers
 ```
 
 ---
 
-## Règle 4
+## Autorisé
 
-Aucune logique métier ne doit être dupliquée.
+```text
+parsers -> core
 
-Si une fonctionnalité existe déjà dans core, elle doit être réutilisée.
+preprocessing -> core
+
+validation -> core
+
+metrics -> core
+
+solvers -> core
+solvers -> preprocessing
+solvers -> validation
+solvers -> metrics
+
+benchmarking -> parsers
+benchmarking -> solvers
+benchmarking -> validation
+benchmarking -> metrics
+```
 
 ---
 
-# Prochaine étape
-
-## Module à développer
+# État réel du projet
 
 ```text
-src/parsers/
+✅ Documentation
+
+✅ Core
+
+✅ Parsers
+
+✅ Preprocessing
+
+✅ Validation
+
+⏳ Metrics
+
+⬜ Greedy Solver
+
+⬜ CPSAT Solver
+
+⬜ Local Search
+
+⬜ Hybrid Solver
+
+⬜ Exporters
+
+⬜ Benchmarking
+
+⬜ Visualization
 ```
 
-Fichiers prévus :
+---
+
+# Prochaine étape officielle
 
 ```text
-instance_loader.py
-solution_loader.py
-schema_checker.py
+src/metrics/
 ```
 
 Objectif :
 
-Transformer les fichiers JSON en objets métier.
+Transformer une solution valide en score d'optimisation afin de comparer :
 
-Ces modules dépendront de :
-
-```text
-core
-```
-
-mais core ne devra jamais dépendre d'eux.
-
----
-
-# Étapes futures
-
-Ordre obligatoire :
-
-1. parsers
-2. preprocessing
-3. validation
-4. metrics
-5. greedy solver
-6. cp-sat solver
-7. local search
-8. hybrid solver
-9. benchmarking
-10. exporters
-11. visualization
-
----
-
-# Responsabilités
-
-Toute modification importante doit mettre à jour :
-
-```text
-docs/current_progress.md
-```
-
-afin que tous les membres disposent du même état du projet.
+- GreedySolver ;
+- CPSATSolver ;
+- HybridSolver.
