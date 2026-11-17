@@ -1,3 +1,6 @@
+import pytest
+pytest.importorskip("ortools", reason="OR-Tools requis pour les tests CP-SAT")
+
 from core.enums import Availability, InstanceSize, Phase, Role
 from core.instance import Instance
 from core.room import Room

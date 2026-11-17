@@ -1,27 +1,31 @@
-"""Assemblage du modèle CP-SAT à partir des composants du paquet."""
+"""Assemblage du modèle complet de planification CP-SAT."""
 
 from __future__ import annotations
 
-from ortools.sat.python import cp_model
+from dataclasses import dataclass
 
 from core.instance import Instance
+from ortools.sat.python import cp_model
 
-from .constraints import add_constraints
-from .objectives import build_objective_terms
-from .variables import Candidate, create_candidates
+from .constraints import add_hard_constraints
+from .cpsat_config import CPSATConfig
+from .objectives import add_objective
+from .variables import CPSATVariables, create_variables
 
-__all__ = ["build_model"]
+
+@dataclass
+class CPSATModel:
+    """Modèle CP-SAT et registres associés nécessaires à l'extraction."""
+
+    model: cp_model.CpModel
+    variables: CPSATVariables
+    metrics: dict[str, cp_model.IntVar]
 
 
-def build_model(
-	instance: Instance, weights: tuple[int, int, int, int, int]
-) -> tuple[cp_model.CpModel, list[Candidate]]:
-	"""Construit variables, contraintes dures et objectif pondéré."""
-	model = cp_model.CpModel()
-	candidates = create_candidates(model, instance)
-	add_constraints(model, instance, candidates)
-	objective_terms = build_objective_terms(model, instance, candidates)
-	model.Minimize(
-		sum(weight * term for weight, term in zip(weights, objective_terms))
-	)
-	return model, candidates
+def build_model(instance: Instance, config: CPSATConfig) -> CPSATModel:
+    """Construit variables, contraintes dures et objectif pondéré."""
+    model = cp_model.CpModel()
+    variables = create_variables(model, instance)
+    add_hard_constraints(model, instance, variables)
+    metrics = add_objective(model, instance, variables, config.objective_weights)
+    return CPSATModel(model=model, variables=variables, metrics=metrics)

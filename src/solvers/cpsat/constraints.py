@@ -1,99 +1,82 @@
-"""Contraintes dures du modèle CP-SAT."""
+"""Traduction des contraintes dures dans le modèle CP-SAT."""
 
 from __future__ import annotations
 
-from ortools.sat.python import cp_model
+from collections import defaultdict
+from typing import DefaultDict
 
 from core.enums import Phase
 from core.instance import Instance
+from ortools.sat.python import cp_model
 
-from .variables import Candidate
-
-__all__ = ["add_constraints"]
+from .variables import CPSATVariables
 
 
-def add_constraints(
-	model: cp_model.CpModel, instance: Instance, candidates: list[Candidate]
+def add_hard_constraints(
+    model: cp_model.CpModel,
+    instance: Instance,
+    variables: CPSATVariables,
 ) -> None:
-	"""Ajoute couverture, continuité, disponibilités et capacités.
+    """Ajoute les contraintes d'affectation, de ressources et de continuité.
 
-	Les disponibilités et la composition des jurys sont déjà intégrées à la
-	génération des candidats; les contraintes ci-dessous relient les choix.
-	"""
-	by_student_phase: dict[tuple[str, Phase], list[Candidate]] = {}
-	by_student_pair_phase: dict[tuple[str, str, str, Phase], list[cp_model.IntVar]] = {}
-	for candidate in candidates:
-		by_student_phase.setdefault((candidate.student_id, candidate.phase), []).append(
-			candidate
-		)
-		key = (
-			candidate.student_id,
-			candidate.president_id,
-			candidate.examiner_id,
-			candidate.phase,
-		)
-		by_student_pair_phase.setdefault(key, []).append(candidate.variable)
+    Les règles métier sont traduites depuis le contrat v4.0. La validation
+    officielle reste exclusivement confiée à ``SolutionValidator``.
+    """
+    candidates = variables.candidates
+    assignments = variables.assignments
 
-	for student in instance.students:
-		for phase in student.required_phases():
-			variables = [
-				candidate.variable
-				for candidate in by_student_phase.get((student.id, phase), [])
-			]
-			model.Add(sum(variables) == 1)
+    # C2-C4 : exactement une affectation pour chaque phase requise.
+    for key in instance.required_sessions():
+        model.Add(sum(variables.by_student_phase[key]) == 1)
 
-		if student.eligible_final:
-			pairs = {
-				(candidate.president_id, candidate.examiner_id)
-				for candidate in by_student_phase.get((student.id, Phase.PREDEFENCE), [])
-			} | {
-				(candidate.president_id, candidate.examiner_id)
-				for candidate in by_student_phase.get((student.id, Phase.FINAL), [])
-			}
-			for president_id, examiner_id in pairs:
-				pre_variables = by_student_pair_phase.get(
-					(student.id, president_id, examiner_id, Phase.PREDEFENCE), []
-				)
-				final_variables = by_student_pair_phase.get(
-					(student.id, president_id, examiner_id, Phase.FINAL), []
-				)
-				model.Add(sum(pre_variables) == sum(final_variables))
+    # C17 : le binôme président/examinateur est identique entre les phases.
+    for student in instance.students:
+        if not student.eligible_final:
+            continue
+        pairs = {
+            (c.president_id, c.examiner_id)
+            for c in candidates if c.student_id == student.id
+        }
+        for president_id, examiner_id in pairs:
+            pre = [assignments[c.key] for c in candidates
+                   if c.student_id == student.id and c.phase is Phase.PREDEFENCE
+                   and c.president_id == president_id and c.examiner_id == examiner_id]
+            final = [assignments[c.key] for c in candidates
+                     if c.student_id == student.id and c.phase is Phase.FINAL
+                     and c.president_id == president_id and c.examiner_id == examiner_id]
+            model.Add(sum(pre) == sum(final))
 
-	teacher_slots: dict[tuple[str, int, int], list[cp_model.IntVar]] = {}
-	teacher_days: dict[tuple[str, int], list[cp_model.IntVar]] = {}
-	student_slots: dict[tuple[str, int, int], list[cp_model.IntVar]] = {}
-	room_slots: dict[tuple[str, int, int], list[cp_model.IntVar]] = {}
-	room_days: dict[tuple[str, int], list[cp_model.IntVar]] = {}
+    # C10-C11 et C21 : ressources non chevauchantes.
+    teacher_slot: DefaultDict[tuple[str, int, int], list[cp_model.IntVar]] = defaultdict(list)
+    student_slot: DefaultDict[tuple[str, int, int], list[cp_model.IntVar]] = defaultdict(list)
+    room_slot: DefaultDict[tuple[str, int, int], list[cp_model.IntVar]] = defaultdict(list)
+    teacher_day: DefaultDict[tuple[str, int], list[cp_model.IntVar]] = defaultdict(list)
+    room_day: DefaultDict[tuple[str, int], list[cp_model.IntVar]] = defaultdict(list)
 
-	for candidate in candidates:
-		attendees = [candidate.president_id, candidate.examiner_id]
-		if candidate.phase is Phase.FINAL:
-			attendees.append(instance.student(candidate.student_id).supervisor_id)
-		for teacher_id in dict.fromkeys(attendees):
-			teacher_slots.setdefault(
-				(teacher_id, candidate.day, candidate.slot), []
-			).append(candidate.variable)
-			teacher_days.setdefault((teacher_id, candidate.day), []).append(
-				candidate.variable
-			)
-		student_slots.setdefault(
-			(candidate.student_id, candidate.day, candidate.slot), []
-		).append(candidate.variable)
-		if candidate.room_id is not None:
-			room_slots.setdefault(
-				(candidate.room_id, candidate.day, candidate.slot), []
-			).append(candidate.variable)
-			room_days.setdefault((candidate.room_id, candidate.day), []).append(
-				candidate.variable
-			)
+    for candidate in candidates:
+        variable = assignments[candidate.key]
+        student_slot[(candidate.student_id, candidate.day, candidate.slot)].append(variable)
+        attending = (candidate.president_id, candidate.examiner_id)
+        if candidate.phase is Phase.FINAL:
+            attending += (candidate.supervisor_id,)
+        for teacher_id in attending:
+            teacher_slot[(teacher_id, candidate.day, candidate.slot)].append(variable)
+            teacher_day[(teacher_id, candidate.day)].append(variable)
+        if candidate.room_id is not None:
+            room_slot[(candidate.room_id, candidate.day, candidate.slot)].append(variable)
+            room_day[(candidate.room_id, candidate.day)].append(variable)
 
-	for variables in (
-		*teacher_slots.values(),
-		*student_slots.values(),
-		*room_slots.values(),
-	):
-		model.Add(sum(variables) <= 1)
-	for (teacher_id, _day), variables in teacher_days.items():
-		model.Add(sum(variables) <= instance.teacher(teacher_id).max_sessions_per_day)
-	for (room_id, _day), variables in room_days.items():
-		model.Add(sum(variables) <= instance.room(room_id).max_sessions_per_day)
+    for values in teacher_slot.values():
+        model.Add(sum(values) <= 1)
+    for values in student_slot.values():
+        model.Add(sum(values) <= 1)
+    for values in room_slot.values():
+        model.Add(sum(values) <= 1)
+
+    # C22-C23 : plafonds journaliers, toutes phases pour les enseignants.
+    for teacher in instance.teachers:
+        for day in instance.all_days:
+            model.Add(sum(teacher_day[(teacher.id, day)]) <= teacher.max_sessions_per_day)
+    for room in instance.rooms:
+        for day in instance.all_days:
+            model.Add(sum(room_day[(room.id, day)]) <= room.max_sessions_per_day)
